@@ -14,7 +14,7 @@ const redis_1 = require("redis");
 let redisClient;
 (() => __awaiter(void 0, void 0, void 0, function* () {
     //Creating redis object - default port 6379
-    exports.redisClient = redisClient = (0, redis_1.createClient)();
+    exports.redisClient = redisClient = (0, redis_1.createClient)({ url: "redis://localhost:6379" });
     redisClient.on("connect", () => {
         console.log("Redis Connected");
     });

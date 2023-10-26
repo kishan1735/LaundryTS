@@ -8,9 +8,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import session from "express-session";
 import passport from "passport";
-import flash from "express-flash";
 import "./config/google";
-dotenv.config({ path: "./config.env" });
+import "dotenv/config";
 
 const app = express();
 app.use(express.json());
@@ -29,7 +28,6 @@ app.use(
     cookies: { secure: false },
   })
 );
-app.use(flash());
 
 app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/owner", ownerRoutes);
@@ -40,20 +38,21 @@ app.use(passport.session());
 
 app.get(
   "/auth/google",
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-  })
+  passport.authenticate("google", { scope: ["profile"] })
 );
 
 app.get(
   "/auth/google/callback",
   passport.authenticate("google", {
-    failureRedirect: "/",
-    successRedirect: `https://localhost:5173/user/login`,
-    failureFlash: true,
-    successFlash: "Successfully logged in!",
-  })
+    failureRedirect: "http://localhost:5173/user/login",
+  }),
+  function (req, res) {
+    // Successful authentication, redirect home.
+    res.redirect("http://localhost:5173");
+  }
 );
+app.use(passport.initialize());
+app.use(passport.session());
 
 const DB: any = process.env.DATABASE_URL?.replace(
   "<PASSWORD>",

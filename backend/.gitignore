@@ -1,3 +1,4 @@
 node_modules
-config.env
-dist/
+.env
+dist
+dump.rdb

@@ -5,7 +5,7 @@ let redisClient;
 (async () => {
   //Creating redis object - default port 6379
 
-  redisClient = createClient();
+  redisClient = createClient({ url: "redis://localhost:6379" });
 
   redisClient.on("connect", () => {
     console.log("Redis Connected");
@@ -19,7 +19,7 @@ let redisClient;
     console.log("Connection ended");
   });
 
-  await redisClient.connect();
+  // await redisClient.connect();
 })();
 
 export { redisClient };
