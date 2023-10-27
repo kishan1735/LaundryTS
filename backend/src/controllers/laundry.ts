@@ -216,7 +216,7 @@ const cancelLaundry = async (
         },
       },
     });
-    await redisClient.del("Laundry :" + shop._id.toString());
+    await redisClient.flushDb();
     res.status(201).json({ status: "success", message: "deleted" });
   } catch (err) {
     res.status(500).json({
@@ -250,7 +250,7 @@ const deliverLaundry = async (
         },
       }
     );
-    await redisClient.del("Laundry :" + shop._id.toString());
+    await redisClient.flushDb();
     res.status(204).json({ status: "success", message: "deleted" });
   } catch (err) {
     res.status(500).json({
