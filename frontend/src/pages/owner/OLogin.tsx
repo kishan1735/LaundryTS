@@ -9,35 +9,38 @@ function OLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const [cookies, setCookie, removeCookie] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   function handleClick() {
     const requestBody = {
       email,
       password,
     };
-    // fetch("http://localhost:8000/api/v1/owner/login", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //   },
-    //   body: JSON.stringify(requestBody),
-    // })
-    //   .then((res: any) => {
-    //     return res.json();
-    //   })
-    //   .then((data) => {
-    //     if (data.status == "success") {
-    //       setPassword("");
-    //       setEmail("");
-    //       setError("");
-    //       setCookie("access_token", data.access_token);
-
-    //       navigate("/owner/main");
-    //     } else {
-    //       setError(data.message);
-    //     }
-    //   })
-    //   .catch((err) => setError(err.message));
+    fetch("http://localhost:8000/api/v1/owner/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    })
+      .then((res: any) => {
+        return res.json();
+      })
+      .then((data) => {
+        if (data.status == "success") {
+          setPassword("");
+          setEmail("");
+          setError("");
+          setCookie("access_token", data.accessToken);
+          setCookie("refresh_token", data.refreshToken);
+          navigate("/owner/main");
+        } else {
+          setError(data.message);
+        }
+      })
+      .catch((err) => setError(err.message));
   }
   return (
     <div className="h-screen flex flex-col items-center" id="home">

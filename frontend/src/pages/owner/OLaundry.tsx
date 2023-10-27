@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { useNavigate } from "react-router-dom";
 import Logout from "../../components/Logout";
+import SendRefresh from "../../components/SendRefresh";
 
 function OLaundry() {
   const [laundry, setLaundry] = useState([]);
   const [error, setError] = useState("");
-  const [cookies] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const navigate = useNavigate();
-  function handlePayload(payload: string, laundryId: string) {
+  async function handlePayload(payload: string, laundryId: string) {
     if (payload && payload !== "deliver") {
       const requestBody = { status: payload, laundryId };
       fetch(`http://127.0.0.1:8000/api/v1/owner/shop/laundry/${laundryId}`, {
@@ -26,6 +30,20 @@ function OLaundry() {
         .then((data: any) => {
           if (data.status == "success") {
             setError("");
+          } else if (
+            data.message == "jwt expired" ||
+            data.message == "jwt malformed"
+          ) {
+            SendRefresh(cookies.refresh_token)
+              .then((response) => response.json())
+              .then((dat) => {
+                if (dat.status == "success") {
+                  setError("Try again");
+                  setCookie("access_token", dat.accessToken);
+                } else {
+                  setError(dat.message);
+                }
+              });
           } else {
             setError(data.message);
           }
@@ -43,7 +61,22 @@ function OLaundry() {
           return res.json();
         })
         .then((data) => {
-          if (data.status == "failed" || data.status == "error") {
+          if (
+            data.message == "jwt expired" ||
+            data.message == "jwt malformed"
+          ) {
+            removeCookie("access_token");
+            SendRefresh(cookies.refresh_token)
+              .then((response) => response.json())
+              .then((dat) => {
+                if (dat.status == "success") {
+                  setError("Try again");
+                  setCookie("access_token", dat.accessToken);
+                } else {
+                  setError(dat.message);
+                }
+              });
+          } else if (data.status == "failed" || data.status == "error") {
             setError("message");
           }
         });
@@ -65,13 +98,28 @@ function OLaundry() {
         if (data.status == "success") {
           setLaundry(data.laundry);
           setError("");
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefresh(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }
       }
       getAllLaundry();
     },
-    [cookies.access_token]
+    [cookies.access_token, cookies.refresh_token, setCookie, removeCookie]
   );
   return (
     <div

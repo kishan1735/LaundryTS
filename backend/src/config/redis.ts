@@ -19,7 +19,7 @@ let redisClient;
     console.log("Connection ended");
   });
 
-  // await redisClient.connect();
+  await redisClient.connect();
 })();
 
 export { redisClient };

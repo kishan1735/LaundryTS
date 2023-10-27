@@ -3,7 +3,6 @@ import HomePage from "./pages/HomePage";
 import ULogin from "./pages/user/ULogin";
 import OLogin from "./pages/owner/OLogin";
 import UDashboard from "./pages/user/UDashboard";
-import USignup from "./pages/user/USignup";
 import OSignup from "./pages/owner/OSignup";
 import ODashboard from "./pages/owner/ODashboard";
 import ULanding from "./pages/user/ULanding";
@@ -20,20 +19,13 @@ import OLaundry from "./pages/owner/OLaundry";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UCreateLaundry from "./pages/user/UCreateLaundry";
 import OForgotPassword from "./pages/owner/OForgotPassword";
-import UForgotPassword from "./pages/user/UForgotPassword";
-
 export default function App() {
   return (
     <>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<HomePage />}></Route>
-          <Route path="/user/signup" element={<USignup />}></Route>
           <Route path="/user/login" element={<ULogin />}></Route>
-          <Route
-            path="/user/forgotpassword"
-            element={<UForgotPassword />}
-          ></Route>
           {/* <Route element={<ProtectedRoute type="user" />}> */}
           <Route path="/user/dashboard" element={<UDashboard />}></Route>
           <Route
@@ -47,9 +39,9 @@ export default function App() {
           <Route
             path="/user/main/profile"
             element={
-              <ProtectedRoute type="user">
-                <UProfile />
-              </ProtectedRoute>
+              // <ProtectedRoute type="user">
+              <UProfile />
+              //  </ProtectedRoute>
             }
           ></Route>
           <Route
@@ -129,9 +121,9 @@ export default function App() {
           <Route
             path="/owner/main/profile"
             element={
-              <ProtectedRoute type="owner">
-                <OProfile />
-              </ProtectedRoute>
+              // <ProtectedRoute type="owner">
+              <OProfile />
+              // </ProtectedRoute>
             }
           ></Route>
           <Route

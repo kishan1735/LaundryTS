@@ -4,6 +4,7 @@ import {
   ownerLogin,
   ownerProtect,
   forgotPassword,
+  createAccessToken,
 } from "../controllers/ownerAuth";
 import {
   updateShop,
@@ -26,6 +27,7 @@ router.route("/signup").post(ownerSignup);
 router.route("/login").post(ownerLogin);
 router.route("/forgotpassword").post(forgotPassword);
 router.route("/resetpassword").post(resetPassword);
+router.route("/createtoken").post(createAccessToken);
 router
   .route("/shop")
   .post(ownerProtect, createShop)

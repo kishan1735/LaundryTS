@@ -1,4 +1,4 @@
-FROM node:18
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -6,14 +6,12 @@ COPY package*.json ./
 
 COPY tsconfig.json ./
 
-COPY redis.conf ./
+COPY .env ./
 
 COPY src ./src
-
-COPY .env ./
 
 RUN npm install && npm install typescript -g
 
 RUN tsc
 
-CMD ["node","dist/app.js"]
+CMD ["node", "./dist/app.js"]

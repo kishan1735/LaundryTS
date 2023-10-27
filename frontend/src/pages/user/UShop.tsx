@@ -4,10 +4,14 @@ import { useCookies } from "react-cookie";
 import { useNavigate, useParams } from "react-router-dom";
 import StarRating from "../../components/StarRating";
 import Logout from "../../components/Logout";
+import SendRefreshUser from "../../components/SendRefreshUser";
 
 function UShop() {
   let { shopId } = useParams();
-  const [cookies] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
   const [contactNumber, setContactNumber] = useState("");
@@ -40,6 +44,21 @@ function UShop() {
           setContactNumber(data.shop.contactNumber);
           setSatisfied(data.shop.satisfied);
           setUnsatisfied(data.shop.unsatisfied);
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.shop.message);
         }
@@ -68,6 +87,21 @@ function UShop() {
             setUserRating(data.userRating[0].rating);
             setDescription(data.userRating[0].description);
           }
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }
@@ -94,6 +128,21 @@ function UShop() {
         .then((data) => {
           if (data.status == "success") {
             setError("");
+          } else if (
+            data.message == "jwt expired" ||
+            data.message == "jwt malformed"
+          ) {
+            removeCookie("access_token");
+            SendRefreshUser(cookies.refresh_token)
+              .then((response) => response.json())
+              .then((dat) => {
+                if (dat.status == "success") {
+                  setError("Try again");
+                  setCookie("access_token", dat.accessToken);
+                } else {
+                  setError(dat.message);
+                }
+              });
           } else {
             setError(data.message);
           }

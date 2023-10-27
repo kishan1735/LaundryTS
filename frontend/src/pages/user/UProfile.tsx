@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { useNavigate } from "react-router-dom";
 import Logout from "../../components/Logout";
+import SendRefreshUser from "../../components/SendRefreshUser";
 
 function UProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
-  const [cookies, setCookie, removeCookie] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const [error, setError] = useState("");
   const [disabled, setDisabled] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -28,13 +32,28 @@ function UProfile() {
           setEmail(data.user.email);
           setAddress(data.user.address);
           setPhoneNumber(data.user.phoneNumber);
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }
       }
       getProfile();
     },
-    [cookies.access_token]
+    [cookies.access_token, cookies.refresh_token, setCookie, removeCookie]
   );
   function handleUpdate() {
     setDisabled(false);
@@ -52,6 +71,21 @@ function UProfile() {
       .then((data) => {
         if (data.status == "success") {
           setError("");
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }
@@ -66,7 +100,40 @@ function UProfile() {
           "Content-type": "application/json",
           Authorization: "Bearer " + cookies.access_token,
         },
-      });
+      })
+        .then((res) => {
+          if (res) {
+            return res.json();
+          } else {
+            throw new Error("Something went wrong");
+          }
+        })
+        .then((data) => {
+          if (
+            data.message == "jwt expired" ||
+            data.message == "jwt malformed"
+          ) {
+            removeCookie("access_token");
+            SendRefreshUser(cookies.refresh_token)
+              .then((response) => response.json())
+              .then((dat) => {
+                if (dat.status == "success") {
+                  setError("Try again");
+                  setCookie("access_token", dat.accessToken);
+                } else {
+                  setError(dat.message);
+                }
+              });
+          } else if (data.status == "failed" || data.status == "error") {
+            setError(data.message);
+          } else {
+            setError("");
+          }
+        })
+        .catch((err) => {
+          setError(err);
+          console.log(err);
+        });
       removeCookie("access_token", {});
       navigate("../../user/login");
     }

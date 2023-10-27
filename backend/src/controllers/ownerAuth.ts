@@ -8,9 +8,15 @@ interface OwnerRequest extends Request {
   owner: any;
 }
 
-const signToken = (id: string) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET!, {
-    expiresIn: process.env.JWT_EXPIRES_IN!,
+const signRefreshToken = (id: string, expiresIn) => {
+  return jwt.sign({ id, type: "refresh" }, process.env.JWT_SECRET!, {
+    expiresIn: expiresIn,
+  });
+};
+
+const signAccessToken = (id: string, expiresIn) => {
+  return jwt.sign({ id, type: "access" }, process.env.JWT_SECRET!, {
+    expiresIn: expiresIn,
   });
 };
 
@@ -46,18 +52,14 @@ const ownerLogin = async (req: Request, res: Response, next: NextFunction) => {
       throw new Error("Unauthorised : Password or email incorrect");
     }
 
-    const token = signToken(owner._id);
-
-    res
-      .cookie("access_token", token, {
-        httpOnly: true,
-      })
-      .status(200)
-      .json({
-        status: "success",
-        message: "Logged In",
-        access_token: token,
-      });
+    const accessToken = signAccessToken(owner._id, "1h");
+    const refreshToken = signRefreshToken(owner._id, "7d");
+    res.status(200).json({
+      status: "success",
+      message: "Logged In",
+      accessToken,
+      refreshToken,
+    });
   } catch (err: any) {
     res.status(500).json({
       status: "error",
@@ -72,7 +74,7 @@ const ownerProtect = async (
   next: NextFunction
 ) => {
   try {
-    let token;
+    let access_token;
     if (!req.headers.authorization) {
       throw new Error("Login and try again");
     }
@@ -80,12 +82,11 @@ const ownerProtect = async (
       req.headers.authorization.split(" ")[0] == "Bearer" &&
       req.headers.authorization.split(" ")[1]
     ) {
-      token = req.headers.authorization.split(" ")[1];
+      access_token = req.headers.authorization.split(" ")[1];
     }
-    if (!token) {
-      throw new Error("You are not logged In !!! Please Login to gain access");
-    }
-    const decoded: any = await jwt.verify(token, process.env.JWT_SECRET);
+
+    const decoded: any = jwt.verify(access_token, process.env.JWT_SECRET);
+
     const freshOwner = await Owner.findById(decoded.id);
     if (!freshOwner) {
       throw new Error("Login as owner and try later");
@@ -128,7 +129,6 @@ const forgotPassword = async (
       resetToken: owner.passwordResetToken,
     });
   } catch (err) {
-    console.log(err);
     if (owner?.passwordResetToken) {
       owner.passwordResetToken;
     }
@@ -171,5 +171,39 @@ const resetPassword = async (
     res.status(500).json({ status: "failed", message: err.message });
   }
 };
-
-export { ownerLogin, ownerSignup, ownerProtect, forgotPassword, resetPassword };
+const createAccessToken = async (req: OwnerRequest, res: Response) => {
+  try {
+    if (!req.headers.authorization) {
+      throw new Error("Login and try again");
+    }
+    let refreshToken;
+    if (
+      req.headers.authorization.split(" ")[0] == "Bearer" &&
+      req.headers.authorization.split(" ")[1]
+    ) {
+      refreshToken = req.headers.authorization.split(" ")[1];
+    }
+    if (!refreshToken) {
+      throw new Error("You are not logged In !!! Please Login to gain access");
+    }
+    const decoded: any = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    if (!decoded) {
+      throw new Error("Login to gain access");
+    }
+    const accessToken = signAccessToken(decoded.id, "1h");
+    res.status(200).json({ status: "success", accessToken });
+  } catch (err) {
+    res.status(500).json({
+      status: "failed",
+      message: err.message,
+    });
+  }
+};
+export {
+  ownerLogin,
+  ownerSignup,
+  ownerProtect,
+  forgotPassword,
+  resetPassword,
+  createAccessToken,
+};

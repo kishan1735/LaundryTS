@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Logout from "../../components/Logout";
 import { useCookies } from "react-cookie";
 import { useNavigate, useParams } from "react-router-dom";
+import SendRefreshUser from "../../components/SendRefreshUser";
 
 function UCreateLaundry() {
   let { shopId } = useParams();
@@ -17,7 +18,10 @@ function UCreateLaundry() {
   const [error, setError] = useState("");
   const [price, setPrice] = useState(0);
   const [exists, setExists] = useState(false);
-  const [cookies] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   function handleCalculatePrice() {
     const requestBody = {
       list: {
@@ -43,6 +47,21 @@ function UCreateLaundry() {
         if (data.status === "success") {
           setPrice(data.totalCost);
           setError("");
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setPrice(0);
           setError(data.message);
@@ -76,6 +95,21 @@ function UCreateLaundry() {
           setError("");
           setExists(true);
           navigate(`/user/main/shops/${shopId}/laundry`);
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }
@@ -97,13 +131,34 @@ function UCreateLaundry() {
         if (data.status == "success") {
           setExists(true);
           setError("");
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setExists(false);
         }
       }
       getLaundry();
     },
-    [cookies.access_token, shopId]
+    [
+      cookies.access_token,
+      shopId,
+      cookies.refresh_token,
+      setCookie,
+      removeCookie,
+    ]
   );
   return (
     <div className={`h-screen flex flex-col items-center `} id="home">

@@ -1,52 +1,40 @@
 /*eslint-disable*/
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Logout from "../../components/Logout";
+import axios, { AxiosResponse } from "axios";
+
 function ULogin() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const [cookies, setCookie, removeCookie] = useCookies(["access_token"]);
-  function handleClick() {
-    const requestBody = {
-      email,
-      password,
-    };
-    fetch("http://127.0.0.1:8000/api/v1/user/login", {
-      method: "POST",
-      headers: { "Content-type": "application/json" },
-      body: JSON.stringify(requestBody),
-    })
-      .then((res: any) => res.json())
-      .then((data) => {
-        if (data.status == "success") {
-          setPassword("");
-          setEmail("");
-          setError("");
-          setCookie("access_token", data.access_token);
-
-          navigate("/user/main");
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
+  useEffect(() => {
+    axios
+      .get("http://localhost:8000/auth/getUser", {
+        withCredentials: true,
+      })
+      .then((res: AxiosResponse) => {
+        if (res.data.status == "success") {
+          setCookie("access_token", res.data.access_token);
+          setCookie("refresh_token", res.data.refresh_token);
         } else {
-          setError(data.message);
+          setError(res.data.message);
         }
       })
-      .catch((err) => setError(err.message));
-  }
+      .catch((err) => console.log(err));
+  }, []);
+
   function handleGoogle() {
-    fetch(`http://127.0.0.1:8000/auth/google`, {
-      headers: {
-        "Content-type": "application/json",
-      },
-      mode: "no-cors",
-    })
-      .then((res) => res.json())
-      .then((data) => console.log(data));
+    window.location.replace("http://localhost:8000/auth/google");
   }
+
   return (
     <div className="h-screen flex flex-col items-center" id="home">
-      {!cookies.access_token ? (
+      {!cookies.access_token && !cookies.refresh_token ? (
         <>
           <nav className="bg-black opacity-80 flex w-full justify-between py-4 px-6 mb-4">
             <h1
@@ -60,52 +48,15 @@ function ULogin() {
             <h1 className="text-white text-3xl uppercase font-black mb-2">
               User Login
             </h1>
-            <div className="flex items-center space-x-6">
-              <h1 className="text-white text-xl uppercase pr-12">Email</h1>
-              <input
-                type="text"
-                value={email}
-                className="px-6 py-1"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center space-x-6 pb-2">
-              <h1 className="text-white text-xl uppercase">Password</h1>
-              <input
-                type="password"
-                value={password}
-                className="px-6 py-1"
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+
             <button
-              className="bg-white mx-16 py-1 text-lg font-bold uppercase hover:scale-110 duration-400"
-              onClick={handleClick}
-            >
-              Login
-            </button>
-            <button
-              className="bg-white mx-16 py-1 text-lg font-bold uppercase hover:scale-110 duration-400"
+              className="bg-white mx-16 py-1 text-lg font-bold uppercase hover:scale-110 duration-400 flex items-center space-x-4 px-4"
               onClick={handleGoogle}
             >
-              Login with Google
+              <p>Login with Google </p>
+              <img src="/public/images/google.png" className="h-8 w-8" />
             </button>
-            <h1 className="text-white text-center">
-              New User -{" "}
-              <Link
-                to="/owner/signup"
-                className="underline uppercase text-yellow-200"
-              >
-                SignUp
-              </Link>{" "}
-              to Get Started
-            </h1>
-            <button
-              className="bg-white mx-16 py-1 text-lg font-bold uppercase hover:scale-110 duration-400 px-8"
-              onClick={() => navigate("/user/forgotpassword")}
-            >
-              Forgot Password
-            </button>
+
             <div className="uppercase text-sm text-center text-white w-[300px]">
               {error}
             </div>

@@ -15,6 +15,7 @@ export interface OwnerType extends mongoose.Document {
   passwordResetToken: string;
   passwordResetExpires: string;
   ownerId: string;
+  refreshToken: string;
 }
 
 const ownerSchema = new mongoose.Schema<OwnerType>({
@@ -53,6 +54,7 @@ const ownerSchema = new mongoose.Schema<OwnerType>({
   },
   passwordResetExpires: Date,
   passwordChangedAt: Date,
+  refreshToken: { type: String, default: "" },
 });
 
 ownerSchema.pre("save", async function (next) {

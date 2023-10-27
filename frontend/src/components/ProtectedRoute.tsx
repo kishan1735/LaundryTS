@@ -3,7 +3,7 @@ import { useCookies } from "react-cookie";
 import { useLocation, useNavigate } from "react-router-dom";
 
 function ProtectedRoute({ type, children }) {
-  const [cookies] = useCookies(["access_token"]);
+  const [cookies] = useCookies(["access_token", "refresh_token"]);
   const navigate = useNavigate();
   const location = useLocation();
   useEffect(
@@ -18,8 +18,7 @@ function ProtectedRoute({ type, children }) {
           body: JSON.stringify(requestBody),
         });
         const data = await res.json();
-        console.log(data);
-        if (!cookies.access_token) {
+        if (!cookies.access_token && !cookies.refresh_token) {
           navigate(`/${type}/login`);
         } else if (
           location.pathname.startsWith("/owner") &&
@@ -37,7 +36,13 @@ function ProtectedRoute({ type, children }) {
       }
       protectedRoute();
     },
-    [cookies.access_token, navigate, type, location.pathname]
+    [
+      cookies.access_token,
+      navigate,
+      type,
+      location.pathname,
+      cookies.refresh_token,
+    ]
   );
   return children;
 }

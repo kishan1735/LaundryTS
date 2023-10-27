@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { useNavigate } from "react-router-dom";
 import Logout from "../../components/Logout";
+import SendRefresh from "../../components/SendRefresh";
 
 function OProfile() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [cookies, setCookie, removeCookie] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const [error, setError] = useState("");
   const [disabled, setDisabled] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -26,13 +30,27 @@ function OProfile() {
           setName(data.owner.name);
           setEmail(data.owner.email);
           setPhoneNumber(data.owner.phoneNumber);
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          SendRefresh(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }
       }
       getProfile();
     },
-    [cookies.access_token]
+    [cookies.access_token, cookies.refresh_token, setCookie]
   );
   function handleDelete() {
     const deleteCheck: any = prompt("Type 'YES' if you want to DELETE");
@@ -43,7 +61,33 @@ function OProfile() {
           "Content-type": "application/json",
           Authorization: "Bearer " + cookies.access_token,
         },
-      });
+      })
+        .then((res) => {
+          if (res) {
+            return res.json();
+          } else {
+            throw new Error("no data");
+          }
+        })
+        .then((data) => {
+          if (
+            data.message == "jwt expired" ||
+            data.message == "jwt malformed"
+          ) {
+            removeCookie("access_token");
+            SendRefresh(cookies.refresh_token)
+              .then((response) => response.json())
+              .then((dat) => {
+                if (dat.status == "success") {
+                  setError("Try again");
+                  setCookie("access_token", dat.accessToken);
+                } else {
+                  setError(dat.message);
+                }
+              });
+          }
+        })
+        .catch((err) => console.log(err));
       removeCookie("access_token", {});
       navigate("../../owner/login");
     }
@@ -65,6 +109,23 @@ function OProfile() {
       .then((data) => {
         if (data.status == "success") {
           setError("");
+          setDisabled(true);
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefresh(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setDisabled(true);
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }

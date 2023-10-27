@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { useNavigate } from "react-router-dom";
 import Logout from "../../components/Logout";
+import SendRefreshUser from "../../components/SendRefreshUser";
 
 function UShops() {
-  const [cookies] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const [shops, setShops] = useState([]);
   const navigate = useNavigate();
   useEffect(
@@ -19,11 +23,23 @@ function UShops() {
         const data = await res.json();
         if (data.status == "success") {
           setShops(data.shops);
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setCookie("access_token", dat.accessToken);
+              }
+            });
         }
       }
       getAllShops();
     },
-    [cookies.access_token]
+    [cookies.access_token, cookies.refresh_token, setCookie, removeCookie]
   );
   return (
     <div

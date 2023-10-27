@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { useNavigate } from "react-router-dom";
 import Logout from "../../components/Logout";
+import SendRefresh from "../../components/SendRefresh";
 
 function OShopUpdate() {
   const [name, setName] = useState("");
@@ -15,7 +16,10 @@ function OShopUpdate() {
   const [bedsheet, setBedsheet] = useState("");
   const [pillowCover, setPillowCover] = useState("");
   const [error, setError] = useState("");
-  const [cookies] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const [disabled, setDisabled] = useState(true);
   const [created, setCreated] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -40,6 +44,36 @@ function OShopUpdate() {
           setBedsheet(data.shop.price.bedsheet);
           setPillowCover(data.shop.price.pillowCover);
           setTowel(data.shop.price.towel);
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefresh(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else if (
+                data.message == "jwt expired" ||
+                data.message == "jwt malformed"
+              ) {
+                removeCookie("access_token");
+                SendRefresh(cookies.refresh_token)
+                  .then((response) => response.json())
+                  .then((dat) => {
+                    if (dat.status == "success") {
+                      setError("Try again");
+                      setCookie("access_token", dat.accessToken);
+                    } else {
+                      setError(dat.message);
+                    }
+                  });
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
           setCreated(false);
@@ -47,7 +81,7 @@ function OShopUpdate() {
       }
       getOwnerShops();
     },
-    [cookies.access_token]
+    [cookies.access_token, cookies.refresh_token, setCookie, removeCookie]
   );
   function handleClick() {
     setDisabled(false);
@@ -68,6 +102,21 @@ function OShopUpdate() {
         if (data.status == "success") {
           setError("");
           navigate("/owner/main/shop");
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefresh(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }
@@ -98,6 +147,21 @@ function OShopUpdate() {
         if (data.status == "success") {
           setError("");
           navigate("/owner/main/shop");
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefresh(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }

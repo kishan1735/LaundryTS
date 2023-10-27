@@ -1,11 +1,5 @@
 import express from "express";
-import {
-  userSignup,
-  userLogin,
-  userProtect,
-  forgotPassword,
-  resetPassword,
-} from "../controllers/userAuth";
+import { createAccessToken, userProtect } from "../controllers/userAuth";
 import { updateUser, deleteUser, getUser } from "../controllers/user";
 import {
   getUserShop,
@@ -22,10 +16,6 @@ import {
 } from "../controllers/laundry";
 const router = express.Router();
 
-router.route("/signup").post(userSignup);
-router.route("/login").post(userLogin);
-router.route("/forgotPassword").post(forgotPassword);
-router.route("/resetpassword").post(resetPassword);
 router
   .route("/profile")
   .get(userProtect, getUser)
@@ -35,6 +25,7 @@ router.route("/shops").get(userProtect, getAllShops);
 router.route("/shops/:shopId").get(userProtect, getUserShop);
 router.route("/shops/:shopId/satisfaction").patch(userProtect, updateSatisfy);
 router.route("/shops/:shopId/calculateCost").post(userProtect, calculatePrice);
+router.route("/createtoken").post(createAccessToken);
 router
   .route("/:id/:shopId/laundry")
   .post(userProtect, createLaundryRequest)

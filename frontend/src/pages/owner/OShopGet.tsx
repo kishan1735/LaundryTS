@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { useNavigate } from "react-router-dom";
 import Logout from "../../components/Logout";
+import SendRefresh from "../../components/SendRefresh";
 
 function OShopGet() {
   const [name, setName] = useState("");
@@ -11,7 +12,10 @@ function OShopGet() {
   const [price, setPrice] = useState("");
   const [unsatisfied, setUnsatisfied] = useState("");
   const [error, setError] = useState("");
-  const [cookies] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const [created, setCreated] = useState(false);
   const navigate = useNavigate();
   useEffect(
@@ -33,6 +37,28 @@ function OShopGet() {
           setSatisfied(data.shop.satisfied);
           setUnsatisfied(data.shop.unsatisfied);
           setPrice(data.shop.price);
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefresh(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(data.message);
+                setCreated(false);
+                setName("");
+                setAddress("");
+                setContactNumber("");
+                setSatisfied("");
+                setUnsatisfied("");
+                setPrice("");
+              }
+            });
         } else {
           setError(data.message);
           setCreated(false);
@@ -46,7 +72,7 @@ function OShopGet() {
       }
       getOwnerShops();
     },
-    [cookies.access_token]
+    [cookies.access_token, cookies.refresh_token, setCookie, removeCookie]
   );
   function handleCreate() {
     navigate("/owner/main/createshop");
@@ -60,7 +86,33 @@ function OShopGet() {
           "Content-Type": "application/json",
           Authorization: "Bearer " + cookies.access_token,
         },
-      }).then((res) => res.json());
+      })
+        .then((res) => {
+          if (res) {
+            return res.json();
+          } else {
+            throw new Error("no data");
+          }
+        })
+        .then((data) => {
+          if (
+            data.message == "jwt expired" ||
+            data.message == "jwt malformed"
+          ) {
+            removeCookie("access_token");
+            SendRefresh(cookies.refresh_token)
+              .then((response) => response.json())
+              .then((dat) => {
+                if (dat.status == "success") {
+                  setError("Try again");
+                  setCookie("access_token", dat.accessToken);
+                } else {
+                  setError(dat.message);
+                }
+              });
+          }
+        })
+        .catch((err) => console.log(err));
     }
   }
 

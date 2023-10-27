@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { useNavigate } from "react-router-dom";
 import Logout from "../../components/Logout";
+import SendRefresh from "../../components/SendRefresh";
 
 function OShopCreate() {
   const [name, setName] = useState("");
@@ -15,7 +16,10 @@ function OShopCreate() {
   const [bedsheet, setBedsheet] = useState("");
   const [pillowCover, setPillowCover] = useState("");
   const [error, setError] = useState("");
-  const [cookies] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const [disabled, setDisabled] = useState(false);
   const [created, setCreated] = useState(false);
   const navigate = useNavigate();
@@ -28,13 +32,34 @@ function OShopCreate() {
         const data: any = await res.json();
         if (data.status == "success") {
           setCreated(true);
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefresh(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setCreated(false);
         }
       }
       getOwnerShops();
     },
-    [cookies.access_token, navigate]
+    [
+      cookies.access_token,
+      navigate,
+      cookies.refresh_token,
+      setCookie,
+      removeCookie,
+    ]
   );
   function handleClick() {
     const requestBody = {
@@ -66,6 +91,21 @@ function OShopCreate() {
           setError("");
           setDisabled(true);
           navigate("/owner/main/shop");
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefresh(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setError(data.message);
         }
@@ -75,7 +115,7 @@ function OShopCreate() {
   if (!created) {
     return (
       <div className="h-full flex flex-col items-center " id="home">
-        <Logout type="owner"/>
+        <Logout type="owner" />
         <div className="bg-black opacity-80 flex flex-col px-12 py-8 space-y-4 border-2 border-slate-400">
           <h1 className="text-white text-3xl uppercase font-black mb-2">
             Create Shop

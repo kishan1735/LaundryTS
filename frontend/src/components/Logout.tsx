@@ -2,12 +2,22 @@ import { useCookies } from "react-cookie";
 import { useNavigate } from "react-router-dom";
 
 function Logout({ type }) {
-  const [cookies, setCookie, removeCookie] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const navigate = useNavigate();
   function handeClick() {
     navigate(`/${type}/login`);
     removeCookie("access_token");
-    console.log(cookies.access_token);
+    removeCookie("refresh_token");
+    if (type == "user") {
+      fetch("http://localhost:8000/auth/logout", {
+        headers: { "Content-type": "application/json" },
+      })
+        .then((res) => res.json())
+        .then((data) => console.log(data));
+    }
   }
   return (
     <nav className="bg-black opacity-80 flex w-full justify-between py-4 px-6 mb-4">

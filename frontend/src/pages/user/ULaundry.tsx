@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { useCookies } from "react-cookie";
 import { useNavigate, useParams } from "react-router-dom";
 import Logout from "../../components/Logout";
+import SendRefreshUser from "../../components/SendRefreshUser";
 
 function ULaundry() {
   let { shopId } = useParams();
   const [error, setError] = useState("");
   const [exists, setExists] = useState(false);
-  const [cookies] = useCookies(["access_token"]);
+  const [cookies, setCookie, removeCookie] = useCookies([
+    "access_token",
+    "refresh_token",
+  ]);
   const [status, setStatus] = useState("");
   const [list, setList] = useState({});
   const navigate = useNavigate();
@@ -32,13 +36,34 @@ function ULaundry() {
           setStatus(data.laundry.status);
           setList(data.laundry.list);
           setError("");
+        } else if (
+          data.message == "jwt expired" ||
+          data.message == "jwt malformed"
+        ) {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
         } else {
           setExists(false);
         }
       }
       getLaundry();
     },
-    [cookies.access_token, shopId]
+    [
+      cookies.access_token,
+      shopId,
+      setCookie,
+      removeCookie,
+      cookies.refresh_token,
+    ]
   );
   function handleDelete() {
     fetch(`http://127.0.0.1:8000/api/v1/user/shops/${shopId}/laundry`, {
@@ -49,12 +74,22 @@ function ULaundry() {
       },
     })
       .then((res) => {
-        // navigate(0);
         return res.json();
       })
       .then((data) => {
-        // navigate(0);
-        if (data.status == "failed" || data.status == "error") {
+        if (data.message == "jwt expired" || data.message == "jwt malformed") {
+          removeCookie("access_token");
+          SendRefreshUser(cookies.refresh_token)
+            .then((response) => response.json())
+            .then((dat) => {
+              if (dat.status == "success") {
+                setError("Try again");
+                setCookie("access_token", dat.accessToken);
+              } else {
+                setError(dat.message);
+              }
+            });
+        } else if (data.status == "failed" || data.status == "error") {
           setError(data.message);
         } else {
           setExists(false);
