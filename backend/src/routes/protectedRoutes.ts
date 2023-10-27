@@ -10,7 +10,7 @@ router.post("/", async (req: Request, res: Response, next: NextFunction) => {
     const token = req.body.token;
     const decoded: any = await jwt.verify(token, process.env.JWT_SECRET);
     let owner = await Owner.findById(decoded.id);
-    let user = await User.findById(decoded.id);
+    let user = await User.findOne({ id: decoded.id });
     if (owner) {
       res.status(200).json({ status: "success", type: "owner" });
     } else if (user) {

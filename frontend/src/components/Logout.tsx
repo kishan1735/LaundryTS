@@ -9,8 +9,10 @@ function Logout({ type }) {
   const navigate = useNavigate();
   function handeClick() {
     navigate(`/${type}/login`);
-    removeCookie("access_token");
+
     removeCookie("refresh_token");
+    removeCookie("access_token");
+
     if (type == "user") {
       fetch("http://localhost:8000/auth/logout", {
         headers: { "Content-type": "application/json" },

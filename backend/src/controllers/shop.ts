@@ -95,6 +95,7 @@ const createShop = async (
   next: NextFunction
 ) => {
   try {
+    console.log("hi");
     const owner = await Owner.findOne({ ownerId: req.owner.ownerId });
     if (!owner) {
       throw new Error("Register as Owner to create shop");

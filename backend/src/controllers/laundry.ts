@@ -4,6 +4,7 @@ import Owner from "../models/ownerModel";
 import Shop from "../models/shopModel";
 import { Request, Response, NextFunction } from "express";
 import { redisClient } from "../config/redis";
+import { sendMail } from "../config/nodemailer";
 
 interface OwnerRequest extends Request {
   owner: any;
@@ -40,6 +41,7 @@ const createLaundryRequest = async (
   res: Response,
   next: NextFunction
 ) => {
+  let cache = req.params.shopId;
   try {
     let shop: any = await Shop.findById(req.params.shopId);
     const laundryList = await Laundry.create({
@@ -49,13 +51,13 @@ const createLaundryRequest = async (
       studentAddress: req.user.address,
       studentPhoneNumber: req.user.phoneNumber,
       list: {
-        shirt: req.body.list.shirt,
-        tshirt: req.body.list.tshirt,
-        shorts: req.body.list.shorts,
-        pant: req.body.list.pant,
-        towel: req.body.list.towel,
-        bedsheet: req.body.list.bedsheet,
-        pillowCover: req.body.list.pillowCover,
+        shirt: +req.body.list.shirt,
+        tshirt: +req.body.list.tshirt,
+        shorts: +req.body.list.shorts,
+        pant: +req.body.list.pant,
+        towel: +req.body.list.towel,
+        bedsheet: +req.body.list.bedsheet,
+        pillowCover: +req.body.list.pillowCover,
       },
       totalCost: req.body.totalCost,
       status: "pending",
@@ -69,6 +71,7 @@ const createLaundryRequest = async (
         },
       },
     });
+    console.log(user);
     shop = await Shop.findByIdAndUpdate(req.params.shopId, {
       $push: {
         laundry: {
@@ -78,6 +81,8 @@ const createLaundryRequest = async (
         },
       },
     });
+    await redisClient.set("Laundry: " + cache, JSON.stringify(laundryList));
+    await redisClient.expire("Laundry: " + cache, 3600);
     res.status(201).json({
       status: "success",
       laundryList,
@@ -94,13 +99,25 @@ const getLaundry = async (
   res: Response,
   next: NextFunction
 ) => {
+  let cache = req.params.shopId;
+  let results;
   try {
-    let results;
-    const shop = await Shop.findById(req.params.shopId);
-    const laundryId = shop.laundry.filter(
-      (el) => el.userId === req.user._id.toString()
-    )[0].laundryId;
-    results = await Laundry.findById(laundryId);
+    const cachedResults = await redisClient.get("Laundry: " + cache);
+    console.log(cachedResults);
+    if (cachedResults !== "null" && cachedResults !== null) {
+      console.log("hi");
+      results = JSON.parse(cachedResults);
+      console.log(results);
+    } else {
+      console.log("hello");
+      const shop = await Shop.findById(req.params.shopId);
+      const laundryId = shop.laundry.filter(
+        (el) => el.userId === req.user._id.toString()
+      )[0].laundryId;
+      results = await Laundry.findById(laundryId);
+      await redisClient.set("Laundry: " + cache, JSON.stringify(results));
+      await redisClient.expire("Laundry: " + cache, 3600);
+    }
 
     if (!results) {
       throw new Error("This Laundry Id doesn't exist");
@@ -137,6 +154,7 @@ const updateStatus = async (
   res: Response,
   next: NextFunction
 ) => {
+  let cache = req.owner.shopId;
   let results;
   try {
     if (req.body.status === "active") {
@@ -148,12 +166,19 @@ const updateStatus = async (
       results = await Laundry.findByIdAndUpdate(req.body.laundryId, {
         status: "ready",
       });
+      const user = await User.findById(results.studentId);
+      await sendMail({
+        email: user.email,
+        subject: "Your laundry is ready",
+        message: "Your laundry is ready",
+      });
     }
     if (!results) {
       throw new Error("This laundry doesn't exist");
     }
 
     results = await Laundry.findById(req.body.laundryId);
+    await redisClient.set("Laundry :" + cache, JSON.stringify(results));
     res.status(200).json({
       status: "success",
       laundry: results,
@@ -191,7 +216,7 @@ const cancelLaundry = async (
         },
       },
     });
-    await redisClient.flushDb();
+    await redisClient.del("Laundry :" + shop._id.toString());
     res.status(201).json({ status: "success", message: "deleted" });
   } catch (err) {
     res.status(500).json({
@@ -225,6 +250,7 @@ const deliverLaundry = async (
         },
       }
     );
+    await redisClient.del("Laundry :" + shop._id.toString());
     res.status(204).json({ status: "success", message: "deleted" });
   } catch (err) {
     res.status(500).json({

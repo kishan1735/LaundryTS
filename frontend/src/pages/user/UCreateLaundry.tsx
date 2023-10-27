@@ -91,7 +91,9 @@ function UCreateLaundry() {
     })
       .then((res) => res.json())
       .then((data) => {
+        console.log(data);
         if (data.status == "success") {
+          console.log("success");
           setError("");
           setExists(true);
           navigate(`/user/main/shops/${shopId}/laundry`);
@@ -128,6 +130,7 @@ function UCreateLaundry() {
           }
         );
         const data = await res.json();
+        console.log(data);
         if (data.status == "success") {
           setExists(true);
           setError("");
@@ -148,6 +151,7 @@ function UCreateLaundry() {
             });
         } else {
           setExists(false);
+          console.log(data.message);
         }
       }
       getLaundry();

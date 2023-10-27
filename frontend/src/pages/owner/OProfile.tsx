@@ -108,7 +108,8 @@ function OProfile() {
       .then((res: any) => res.json())
       .then((data) => {
         if (data.status == "success") {
-          setError("");
+          setError("Success");
+          setUpdating(false);
           setDisabled(true);
         } else if (
           data.message == "jwt expired" ||
@@ -169,12 +170,25 @@ function OProfile() {
           </h1>
           <h1 className="text-xl text-white lowercase font-black ">{email}</h1>
         </div>
-        <button
-          className="bg-white mx-16 py-1 text-lg font-bold uppercase hover:scale-110 duration-400"
-          onClick={handleUpdate}
-        >
-          {updating ? "Click to Update" : "Update Owner"}
-        </button>
+        {updating ? (
+          <button
+            className="bg-white mx-16 py-1 text-lg font-bold uppercase hover:scale-110 duration-400"
+            onClick={handleUpdate}
+          >
+            Update Owner
+          </button>
+        ) : (
+          <button
+            className="bg-white mx-16 py-1 text-lg font-bold uppercase hover:scale-110 duration-400"
+            onClick={() => {
+              setDisabled(false);
+              setUpdating(true);
+              setError("");
+            }}
+          >
+            Click to Update
+          </button>
+        )}
         <button
           className="bg-white mx-16 py-1 text-lg font-bold uppercase hover:scale-110 duration-400"
           onClick={handleDelete}

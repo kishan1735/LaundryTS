@@ -18,4 +18,3 @@ const sendMail = async (options) => {
 };
 
 export { sendMail };
-// export { transporter };

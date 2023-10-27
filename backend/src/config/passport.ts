@@ -19,7 +19,6 @@ passport.use(
         id = profile.emails[0].value.slice(1, 9);
       }
       const user = await User.findOne({ email });
-      console.log(user);
       if (!user) {
         await User.create({ email, id, name });
       }

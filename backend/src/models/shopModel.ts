@@ -25,11 +25,9 @@ const RatingSchema = new mongoose.Schema({
 const laundrySchema = new mongoose.Schema({
   laundryId: {
     type: String,
-    unique: true,
   },
   userId: {
     type: String,
-    unique: true,
   },
   totalCost: {
     type: Number,
