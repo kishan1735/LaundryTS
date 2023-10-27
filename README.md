@@ -1,5 +1,6 @@
 # LaundryTS
 This is a full stack Laundry Management website built using 
+- Typescript
 - React JS - Frontend
 - Express JS - Backend
 - Redis - Caching
