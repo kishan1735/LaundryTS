@@ -12,7 +12,12 @@ function Logout({ type }) {
 
     removeCookie("refresh_token");
     removeCookie("access_token");
-
+    fetch("http://127.0.0.1:8000/api/v1/protect/deleteCache", {
+      method: "DELETE",
+      headers: { "Content-type": "application/json" },
+    })
+      .then((res) => res.json())
+      .then((data) => console.log(data));
     if (type == "user") {
       fetch("http://localhost:8000/auth/logout", {
         headers: { "Content-type": "application/json" },
